@@ -3,7 +3,7 @@ use std::str::FromStr;
 use std::default::Default;
 
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct Node {
     position: [i8; 2],
     doors: [bool; 4],
@@ -32,13 +32,14 @@ impl Default for Node {
 
 
 fn main() {
-
-
     println!("Hello, world!");
+
+    let matrix = get_input_from_txt("amandaMaze.txt".to_string());
+    println!("{:?}", matrix);
 }
 
 
-fn getInputFromTxt(filePath: String) -> Vec<Vec<Node>> {
+fn get_input_from_txt(filePath: String) -> Vec<Vec<Node>> {
     let contents = fs::read_to_string(filePath).expect("Error reading file");
 
     //let mut matrix:[[Option<Node>; 9]; 5];
@@ -51,20 +52,6 @@ fn getInputFromTxt(filePath: String) -> Vec<Vec<Node>> {
         }
         matrix.push(row);
     }
-    // for i in 0..10 {
-    //     for j in 0..7 {
-    //         matrix[i][j] = Node {
-    //             position: [0, 0],
-    //             doors: [false, false, false, false],
-    //             key: false,
-    //             left: None,
-    //             right: None,
-    //             up: None,
-    //             down: None,
-    //             exit: false,
-    //         }
-    //     }   
-    // }
     
 
     for (i, line) in contents.lines().enumerate() {
@@ -102,7 +89,8 @@ fn getInputFromTxt(filePath: String) -> Vec<Vec<Node>> {
             
         let node = Node {
             position: [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()],
-            doors: [doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap()],
+            //doors: [doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap()],
+            doors: [false, false, false, false],
             key: key,
             left: left,
             right: right,
