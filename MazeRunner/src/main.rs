@@ -8,27 +8,12 @@ struct Node {
     position: [i8; 2],
     doors: [bool; 4],
     key: bool,
-    left: Option<Box<Node>>,
+    left: Option<Box<Node>>,        // uzmi samo pozicije tih okolnih
     right: Option<Box<Node>>,
     up: Option<Box<Node>>,
     down: Option<Box<Node>>,
     exit: bool,
 }
-
-// impl Copy for Node {
-//     fn default() -> Self {
-//         Node {
-//             position: [0, 0],
-//             doors: [false, false, false, false],
-//             key: false,
-//             left: None,
-//             right: None,
-//             up: None,
-//             down: None,
-//             exit: false,
-//         }
-//     }
-// }
 
 impl Default for Node {
     fn default() -> Self {
@@ -53,10 +38,19 @@ fn main() {
 }
 
 
-fn getInputFromTxt(filePath: String) -> [[Node; 9]; 5] {
+fn getInputFromTxt(filePath: String) -> Vec<Vec<Node>> {
     let contents = fs::read_to_string(filePath).expect("Error reading file");
 
-    let mut matrix = [[Node::default(); 9]; 5];
+    //let mut matrix:[[Option<Node>; 9]; 5];
+    //let mut matrix:[[Option<Node>; 9]; 5] = [[None; 9]; 5];
+    let mut matrix: Vec<Vec<Node>> = Vec::new();
+    for _ in 0..5 {
+        let mut row = Vec::new();
+        for _ in 0..9 {
+            row.push(Node::default());
+        }
+        matrix.push(row);
+    }
     // for i in 0..10 {
     //     for j in 0..7 {
     //         matrix[i][j] = Node {
@@ -88,17 +82,17 @@ fn getInputFromTxt(filePath: String) -> [[Node; 9]; 5] {
             None
         };
         let right = if direction.next() == Some((1, '1')) {
-            Some(Box::new(matrix[i/9][i%9 + 1]))
+            Some(Box::new(matrix[i/9][i%9 + 1].clone()))
             } else {
             None
         };
         let up = if direction.next() == Some((2, '1')) {
-            Some(Box::new(matrix[i/9 - 1][i%9]))
+            Some(Box::new(matrix[i/9 - 1][i%9].clone()))
             } else {
             None
         };
         let down = if direction.next() == Some((3, '1')) {
-            Some(Box::new(matrix[i/9 + 1][i%9]))
+            Some(Box::new(matrix[i/9 + 1][i%9].clone()))
             } else {
             None
         };
