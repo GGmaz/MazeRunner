@@ -36,6 +36,30 @@ fn main() {
 
     let matrix = get_input_from_txt("amandaMaze.txt".to_string());
     println!("{:?}", matrix);
+
+    let path = search(Some(Box::new(matrix[0][0].clone())), Vec::new());
+}
+
+fn search(node: Option<Box<Node>>, mut path: Vec<[i8; 2]>) -> Vec<[i8; 2]> {
+    let node = node.as_ref().unwrap();
+
+    path = if node.down.is_some() {
+        search(node.down, path)
+    } else { path };
+
+    path = if node.left.is_some() {
+        search(node.left, path)
+    } else { path };
+
+    path = if node.right.is_some() {
+        search(node.right, path)
+    } else { path };
+
+    path = if node.up.is_some() {
+        search(node.up, path)
+    } else { path };
+
+    path
 }
 
 
@@ -56,7 +80,6 @@ fn get_input_from_txt(file_path: String) -> Vec<Vec<Node>> {
         let mut line_list = line.split_whitespace();
 
         let mut direction = line_list.next().unwrap().chars().enumerate();
-        //let doors:i32 = lineList.next().unwrap().parse::<i32>().unwrap();
         let mut doors = line_list.next().unwrap().chars().enumerate();
         let mut key_and_exit = line_list.next().unwrap().chars().enumerate();
 
