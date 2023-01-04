@@ -39,13 +39,11 @@ fn main() {
 }
 
 
-fn get_input_from_txt(filePath: String) -> Vec<Vec<Node>> {
-    let contents = fs::read_to_string(filePath).expect("Error reading file");
-
-    //let mut matrix:[[Option<Node>; 9]; 5];
-    //let mut matrix:[[Option<Node>; 9]; 5] = [[None; 9]; 5];
+fn get_input_from_txt(file_path: String) -> Vec<Vec<Node>> {
+    let contents = fs::read_to_string(file_path).expect("Error reading file");
+    
     let mut matrix: Vec<Vec<Node>> = Vec::new();
-    for _ in 0..5 {
+    for _ in 0..6 {
         let mut row = Vec::new();
         for _ in 0..9 {
             row.push(Node::default());
@@ -55,12 +53,12 @@ fn get_input_from_txt(filePath: String) -> Vec<Vec<Node>> {
     
 
     for (i, line) in contents.lines().enumerate() {
-        let mut lineList = line.split_whitespace();
+        let mut line_list = line.split_whitespace();
 
-        let mut direction = lineList.next().unwrap().chars().enumerate();
+        let mut direction = line_list.next().unwrap().chars().enumerate();
         //let doors:i32 = lineList.next().unwrap().parse::<i32>().unwrap();
-        let mut doors = lineList.next().unwrap().chars().enumerate();
-        let mut keyAndExit = lineList.next().unwrap().chars().enumerate();
+        let mut doors = line_list.next().unwrap().chars().enumerate();
+        let mut key_and_exit = line_list.next().unwrap().chars().enumerate();
 
 
         let left = if direction.next() == Some((0, '1')) {
@@ -84,13 +82,12 @@ fn get_input_from_txt(filePath: String) -> Vec<Vec<Node>> {
             None
         };
 
-        let key = keyAndExit.next().unwrap().1 == '1' && keyAndExit.next().unwrap().1 == '1';
-        let exit = keyAndExit.next().unwrap().1 == '1' && keyAndExit.next().unwrap().1 == '1';
+        let key = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
+        let exit = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
             
         let node = Node {
             position: [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()],
-            //doors: [doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap(), doors.next().unwrap().1.to_string().parse().unwrap()],
-            doors: [false, false, false, false],
+            doors: [doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1'],
             key: key,
             left: left,
             right: right,
