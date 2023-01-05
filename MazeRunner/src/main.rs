@@ -35,43 +35,113 @@ fn main() {
     println!("Hello, world!");
 
     let matrix = get_input_from_txt("amandaMaze.txt".to_string());
-    println!("{:?}", matrix);
+    println!("gotov unos matrice");
 
-    let path = search(Some(Box::new(matrix[0][0].clone())), Vec::new());
+    let path = search(Some(Box::new(matrix[0][0].clone())), Vec::new(), false, Vec::new());
+    println!("{:?}", path);
 }
 
-fn search(node: Option<Box<Node>>, mut path: Vec<[i8; 2]>) -> Vec<[i8; 2]> {
+fn search(node: Option<Box<Node>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, mut best_path: Vec<([i8; 2], i32)>) -> (Vec<([i8; 2], i32)>, Vec<([i8; 2], i32)>) {
     let node = node.unwrap();
 
-    path = match node.down {
+    if path.len() + 1 > best_path.len() && best_path.len() > 0 {    //prekoracio je vec dozvoljenu duzinu puta
+        return (path, best_path)
+    }
+
+    
+    if node.exit {      //dosao je do kraja (vratim mu path bez tog poslednjeg koraka -> treba da ga dodam posle rucno)
+        return (path.clone(), path)
+    }
+
+
+    let mut keys = if node.key {
+        path.last_mut().unwrap().1 + 1
+    } else {
+        path.last_mut().unwrap().1
+    };
+
+    if was_throw_door {
+        keys -= 1;
+    }
+
+    if !path.contains(&(node.position, keys)) {         // da li sam vec bio tu
+        path.push((node.position, keys));
+    } else {
+        return (path, best_path)
+    }
+
+
+
+    (path, best_path) = match node.down {
         Some(down) => {
-            search(Some(down), path)
+            if down.doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    //path.last_mut().unwrap().1 -= 1;
+                    search(Some(down), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(down), path, false, best_path)
+            }
         },
-        None => { path }
+        None => { (path, best_path) }
     };
 
-    path = match node.left {
+    (path, best_path) = match node.left {
         Some(left) => {
-            search(Some(left), path)
+            if left.doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    search(Some(left), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(left), path, false, best_path)
+            }
         },
-        None => { path }
+        None => { (path, best_path) }
     };
 
-    path = match node.right {
+    (path, best_path) = match node.right {
         Some(right) => {
-            search(Some(right), path)
+            if right.doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    search(Some(right), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(right), path, false, best_path)
+            }
         },
-        None => { path }
+        None => { (path, best_path) }
     };
 
-    path = match node.up {
+    (path, best_path) = match node.up {
         Some(up) => {
-            search(Some(up), path)
+            if up.doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    search(Some(up), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(up), path, false, best_path)
+            }
         },
-        None => { path }
+        None => { (path, best_path) }
     };
 
-    path
+
+    // path = match node.up {
+    //     Some(up) => {
+    //         search(Some(up), path)
+    //     },
+    //     None => { path }
+    // };
+
+    (path, best_path)
 }
 
 
