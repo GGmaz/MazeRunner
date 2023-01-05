@@ -1,4 +1,6 @@
+use std::cell::RefCell;
 use std::fs;
+use std::rc::Rc;
 use std::str::FromStr;
 use std::default::Default;
 
@@ -8,10 +10,10 @@ struct Node {
     position: [i8; 2],
     doors: [bool; 4],
     key: bool,
-    left: Option<Box<Node>>,        // uzmi samo pozicije tih okolnih
-    right: Option<Box<Node>>,
-    up: Option<Box<Node>>,
-    down: Option<Box<Node>>,
+    left: Option<Rc<RefCell<Node>>>,
+    right: Option<Rc<RefCell<Node>>>,
+    up: Option<Rc<RefCell<Node>>>,
+    down: Option<Rc<RefCell<Node>>>,
     exit: bool,
 }
 
@@ -30,129 +32,26 @@ impl Default for Node {
     }
 }
 
-
 fn main() {
     println!("Hello, world!");
 
-    let matrix = get_input_from_txt("amandaMaze.txt".to_string());
+    let head = get_input_from_txt("amandaMaze.txt".to_string());
     println!("gotov unos matrice");
 
-    let path = search(Some(Box::new(matrix[0][0].clone())), Vec::new(), false, Vec::new());
-    println!("{:?}", path);
-}
-
-fn search(node: Option<Box<Node>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, mut best_path: Vec<([i8; 2], i32)>) -> (Vec<([i8; 2], i32)>, Vec<([i8; 2], i32)>) {
-    let node = node.unwrap();
-
-    if path.len() + 1 > best_path.len() && best_path.len() > 0 {    //prekoracio je vec dozvoljenu duzinu puta
-        return (path, best_path)
-    }
-
-    
-    if node.exit {      //dosao je do kraja (vratim mu path bez tog poslednjeg koraka -> treba da ga dodam posle rucno)
-        return (path.clone(), path)
-    }
-
-
-    let mut keys = if node.key {
-        path.last_mut().unwrap().1 + 1
-    } else {
-        path.last_mut().unwrap().1
-    };
-
-    if was_throw_door {
-        keys -= 1;
-    }
-
-    if !path.contains(&(node.position, keys)) {         // da li sam vec bio tu
-        path.push((node.position, keys));
-    } else {
-        return (path, best_path)
-    }
-
-
-
-    (path, best_path) = match node.down {
-        Some(down) => {
-            if down.doors[2] {
-                if path[path.len()-1].1 > 0 {
-                    //path.last_mut().unwrap().1 -= 1;
-                    search(Some(down), path, true, best_path)
-                } else {
-                    (path, best_path)
-                }
-            } else {
-                search(Some(down), path, false, best_path)
-            }
-        },
-        None => { (path, best_path) }
-    };
-
-    (path, best_path) = match node.left {
-        Some(left) => {
-            if left.doors[2] {
-                if path[path.len()-1].1 > 0 {
-                    search(Some(left), path, true, best_path)
-                } else {
-                    (path, best_path)
-                }
-            } else {
-                search(Some(left), path, false, best_path)
-            }
-        },
-        None => { (path, best_path) }
-    };
-
-    (path, best_path) = match node.right {
-        Some(right) => {
-            if right.doors[2] {
-                if path[path.len()-1].1 > 0 {
-                    search(Some(right), path, true, best_path)
-                } else {
-                    (path, best_path)
-                }
-            } else {
-                search(Some(right), path, false, best_path)
-            }
-        },
-        None => { (path, best_path) }
-    };
-
-    (path, best_path) = match node.up {
-        Some(up) => {
-            if up.doors[2] {
-                if path[path.len()-1].1 > 0 {
-                    search(Some(up), path, true, best_path)
-                } else {
-                    (path, best_path)
-                }
-            } else {
-                search(Some(up), path, false, best_path)
-            }
-        },
-        None => { (path, best_path) }
-    };
-
-
-    // path = match node.up {
-    //     Some(up) => {
-    //         search(Some(up), path)
-    //     },
-    //     None => { path }
-    // };
-
-    (path, best_path)
+    // let path = search(Some(head), vec![([0, 0], 0)], false, Vec::new());
+    // println!("{:?}", path);
 }
 
 
-fn get_input_from_txt(file_path: String) -> Vec<Vec<Node>> {
+fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
     let contents = fs::read_to_string(file_path).expect("Error reading file");
     
-    let mut matrix: Vec<Vec<Node>> = Vec::new();
+    // let mut matrix: Vec<Vec<Node>> = Vec::new();
+    let mut matrix: Vec<Vec<Rc<RefCell<Node>>>> = Vec::new();
     for _ in 0..6 {
         let mut row = Vec::new();
         for _ in 0..9 {
-            row.push(Node::default());
+            row.push(Rc::new(RefCell::new(Node::default())));
         }
         matrix.push(row);
     }
@@ -167,43 +66,192 @@ fn get_input_from_txt(file_path: String) -> Vec<Vec<Node>> {
 
 
         let left = if direction.next() == Some((0, '1')) {
-            Some(Box::new(matrix[i/9][i%9 - 1].clone()))
+            Some(Rc::clone(&matrix[i/9][i%9 - 1]))
             } else {
             None
         };
         let right = if direction.next() == Some((1, '1')) {
-            Some(Box::new(matrix[i/9][i%9 + 1].clone()))
+            Some(Rc::clone(&matrix[i/9][i%9 + 1]))
             } else {
             None
         };
         let up = if direction.next() == Some((2, '1')) {
-            Some(Box::new(matrix[i/9 - 1][i%9].clone()))
+            Some(Rc::clone(&matrix[i/9 - 1][i%9]))
             } else {
             None
         };
         let down = if direction.next() == Some((3, '1')) {
-            Some(Box::new(matrix[i/9 + 1][i%9].clone()))
+            Some(Rc::clone(&matrix[i/9 + 1][i%9]))
             } else {
             None
         };
 
         let key = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
         let exit = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
-            
+        
         let node = Node {
             position: [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()],
             doors: [doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1'],
             key: key,
-            left: left,
-            right: right,
-            up: up,
-            down: down,
+            left: left.map(|n| Rc::clone(&n)),
+            right: right.map(|n| Rc::clone(&n)),
+            up: up.map(|n| Rc::clone(&n)),
+            down: down.map(|n| Rc::clone(&n)),
             exit: exit,
         };
 
 
-        matrix[i/9][i%9] = node;        
+        let node_ref = Rc::new(RefCell::new(node));
+        matrix[i/9][i%9] = node_ref.clone();
+
+        // let mut node_mut = node_ref.borrow_mut();
+        // node_mut.left = left.map(|n| Rc::clone(&n));
+        // node_mut.right = right.map(|n| Rc::clone(&n));
+        // node_mut.up = up.map(|n| Rc::clone(&n));
+        // node_mut.down = down.map(|n| Rc::clone(&n));      
     }
 
-    matrix
+    matrix[0][0].clone()
+    // create_graph(&mut matrix)
 }
+
+// fn search(node: Option<Rc<Node>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, mut best_path: Vec<([i8; 2], i32)>) -> (Vec<([i8; 2], i32)>, Vec<([i8; 2], i32)>) {
+//     let node = node.unwrap();
+
+//     if path.len() + 1 > best_path.len() && best_path.len() > 1 {    //prekoracio je vec dozvoljenu duzinu puta
+//         return (path, best_path)
+//     }
+
+    
+//     if node.exit {      //dosao je do kraja (vratim mu path bez tog poslednjeg koraka -> treba da ga dodam posle rucno)
+//         return (path.clone(), path)
+//     }
+
+
+//     let mut keys = if node.key {
+//         path.last_mut().unwrap().1 + 1
+//     } else {
+//         path.last_mut().unwrap().1
+//     };
+
+//     if was_throw_door {
+//         keys -= 1;
+//     }
+
+//     if !path.contains(&(node.position, keys)) {         // da li sam vec bio tu
+//         path.push((node.position, keys));
+//     } else if path.len() == 1 {
+        
+//     } else {
+//         return (path, best_path)
+//     }
+
+
+
+//     (path, best_path) = match &node.down {
+//         Some(down) => {
+//             if down.doors[2] {
+//                 if path[path.len()-1].1 > 0 {
+//                     //path.last_mut().unwrap().1 -= 1;
+//                     search(Some(down.clone()), path, true, best_path)
+//                 } else {
+//                     (path, best_path)
+//                 }
+//             } else {
+//                 search(Some(down.clone()), path, false, best_path)
+//             }
+//         },
+//         None => { (path, best_path) }
+//     };
+
+//     (path, best_path) = match &node.left {
+//         Some(left) => {
+//             if left.doors[2] {
+//                 if path[path.len()-1].1 > 0 {
+//                     search(Some(left.clone()), path, true, best_path)
+//                 } else {
+//                     (path, best_path)
+//                 }
+//             } else {
+//                 search(Some(left.clone()), path, false, best_path)
+//             }
+//         },
+//         None => { (path, best_path) }
+//     };
+
+//     (path, best_path) = match &node.right {
+//         Some(right) => {
+//             if right.doors[2] {
+//                 if path[path.len()-1].1 > 0 {
+//                     search(Some(right.clone()), path, true, best_path)
+//                 } else {
+//                     (path, best_path)
+//                 }
+//             } else {
+//                 search(Some(right.clone()), path, false, best_path)
+//             }
+//         },
+//         None => { (path, best_path) }
+//     };
+
+//     (path, best_path) = match &node.up {
+//         Some(up) => {
+//             if up.doors[2] {
+//                 if path[path.len()-1].1 > 0 {
+//                     search(Some(up.clone()), path, true, best_path)
+//                 } else {
+//                     (path, best_path)
+//                 }
+//             } else {
+//                 search(Some(up.clone()), path, false, best_path)
+//             }
+//         },
+//         None => { (path, best_path) }
+//     };
+
+
+//     // path = match node.up {
+//     //     Some(up) => {
+//     //         search(Some(up), path)
+//     //     },
+//     //     None => { path }
+//     // };
+
+//     (path, best_path)
+// }
+
+
+
+
+
+// fn create_graph(matrix: &mut Vec<Vec<Box<Node>>>) -> Node {
+//     let num_rows = matrix.len();
+//     let num_cols = matrix[0].len();
+
+//     for row in 0..num_rows {
+//         for col in 0..num_cols {
+//             let node = &mut matrix[row][col];
+//             if col > 0 {
+//                 node.left = node.left.take().replace(matrix[row][col - 1]);
+//             }
+//             if col < num_cols - 1 {
+//                 node.right = node.right.take().replace(matrix[row][col + 1].clone());
+//             }
+//             if row > 0 {
+//                 node.up = node.up.take().replace(matrix[row - 1][col].clone());
+//             }
+//             if row < num_rows - 1 {
+//                 node.down = node.down.take().replace(matrix[row + 1][col].clone());
+//             }
+//         }
+//     }
+
+//     *matrix[0][0]
+// }
+
+
+
+
+
+
+
