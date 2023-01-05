@@ -41,23 +41,35 @@ fn main() {
 }
 
 fn search(node: Option<Box<Node>>, mut path: Vec<[i8; 2]>) -> Vec<[i8; 2]> {
-    let node = node.as_ref().unwrap();
+    let node = node.unwrap();
 
-    path = if node.down.is_some() {
-        search(node.down, path)
-    } else { path };
+    path = match node.down {
+        Some(down) => {
+            search(Some(down), path)
+        },
+        None => { path }
+    };
 
-    path = if node.left.is_some() {
-        search(node.left, path)
-    } else { path };
+    path = match node.left {
+        Some(left) => {
+            search(Some(left), path)
+        },
+        None => { path }
+    };
 
-    path = if node.right.is_some() {
-        search(node.right, path)
-    } else { path };
+    path = match node.right {
+        Some(right) => {
+            search(Some(right), path)
+        },
+        None => { path }
+    };
 
-    path = if node.up.is_some() {
-        search(node.up, path)
-    } else { path };
+    path = match node.up {
+        Some(up) => {
+            search(Some(up), path)
+        },
+        None => { path }
+    };
 
     path
 }
