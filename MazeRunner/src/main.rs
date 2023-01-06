@@ -38,8 +38,114 @@ fn main() {
     let head = get_input_from_txt("amandaMaze.txt".to_string());
     println!("gotov unos matrice");
 
-    // let path = search(Some(head), vec![([0, 0], 0)], false, Vec::new());
-    // println!("{:?}", path);
+    let path = search(Some(head), vec![([0, 0], 0)], false, Vec::new());
+    println!("{:?}", path);
+}
+
+
+fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, mut best_path: Vec<([i8; 2], i32)>) -> (Vec<([i8; 2], i32)>, Vec<([i8; 2], i32)>) {
+    let node = node.unwrap();
+
+    if path.len() + 1 > best_path.len() && best_path.len() > 1 {    //prekoracio je vec dozvoljenu duzinu puta
+        return (path, best_path)
+    }
+
+    
+    if node.borrow().exit {      //dosao je do kraja (vratim mu path bez tog poslednjeg koraka -> treba da ga dodam posle rucno)
+        return (path.clone(), path)
+    }
+
+
+    let mut keys = if node.borrow().key {
+        path.last_mut().unwrap().1 + 1
+    } else {
+        path.last_mut().unwrap().1
+    };
+
+    if was_throw_door {
+        keys -= 1;
+    }
+
+    if !path.contains(&(node.borrow().position, keys)) {         // da li sam vec bio tu
+        path.push((node.borrow().position, keys));
+    } else if path.len() == 1 {
+        
+    } else {
+        return (path, best_path)
+    }
+
+
+
+    (path, best_path) = match &node.borrow().down {
+        Some(down) => {
+            if down.borrow().doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    //path.last_mut().unwrap().1 -= 1;
+                    search(Some(down.clone()), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(down.clone()), path, false, best_path)
+            }
+        },
+        None => { (path, best_path) }
+    };
+
+    (path, best_path) = match &node.borrow().left {
+        Some(left) => {
+            if left.borrow().doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    search(Some(left.clone()), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(left.clone()), path, false, best_path)
+            }
+        },
+        None => { (path, best_path) }
+    };
+
+    (path, best_path) = match &node.borrow().right {
+        Some(right) => {
+            if right.borrow().doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    search(Some(right.clone()), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(right.clone()), path, false, best_path)
+            }
+        },
+        None => { (path, best_path) }
+    };
+
+    (path, best_path) = match &node.borrow().up {
+        Some(up) => {
+            if up.borrow().doors[2] {
+                if path[path.len()-1].1 > 0 {
+                    search(Some(up.clone()), path, true, best_path)
+                } else {
+                    (path, best_path)
+                }
+            } else {
+                search(Some(up.clone()), path, false, best_path)
+            }
+        },
+        None => { (path, best_path) }
+    };
+
+
+    // path = match node.up {
+    //     Some(up) => {
+    //         search(Some(up), path)
+    //     },
+    //     None => { path }
+    // };
+
+    (path, best_path)
 }
 
 
@@ -89,20 +195,32 @@ fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
         let key = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
         let exit = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
         
-        let node = Node {
-            position: [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()],
-            doors: [doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1'],
-            key: key,
-            left: left.map(|n| Rc::clone(&n)),
-            right: right.map(|n| Rc::clone(&n)),
-            up: up.map(|n| Rc::clone(&n)),
-            down: down.map(|n| Rc::clone(&n)),
-            exit: exit,
-        };
+        // let node = Node {
+        //     position: [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()],
+        //     doors: [doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1'],
+        //     key: key,
+        //     left: left.map(|n| Rc::clone(&n)),
+        //     right: right.map(|n| Rc::clone(&n)),
+        //     up: up.map(|n| Rc::clone(&n)),
+        //     down: down.map(|n| Rc::clone(&n)),
+        //     exit: exit,
+        // };
+
+        let mut node_mut = matrix[i/9][i%9].borrow_mut();
+
+        node_mut.position = [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()];
+        node_mut.key = key;
+        node_mut.doors = [doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1'];
+        node_mut.exit = exit;
+        node_mut.left = left.map(|n| Rc::clone(&n));
+        node_mut.right = right.map(|n| Rc::clone(&n));
+        node_mut.up = up.map(|n| Rc::clone(&n));
+        node_mut.down = down.map(|n| Rc::clone(&n));
 
 
-        let node_ref = Rc::new(RefCell::new(node));
-        matrix[i/9][i%9] = node_ref.clone();
+
+        // let node_ref = Rc::new(RefCell::new(node));
+        // matrix[i/9][i%9] = node_ref.clone();
 
         // let mut node_mut = node_ref.borrow_mut();
         // node_mut.left = left.map(|n| Rc::clone(&n));
@@ -112,113 +230,9 @@ fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
     }
 
     matrix[0][0].clone()
-    // create_graph(&mut matrix)
 }
 
-// fn search(node: Option<Rc<Node>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, mut best_path: Vec<([i8; 2], i32)>) -> (Vec<([i8; 2], i32)>, Vec<([i8; 2], i32)>) {
-//     let node = node.unwrap();
 
-//     if path.len() + 1 > best_path.len() && best_path.len() > 1 {    //prekoracio je vec dozvoljenu duzinu puta
-//         return (path, best_path)
-//     }
-
-    
-//     if node.exit {      //dosao je do kraja (vratim mu path bez tog poslednjeg koraka -> treba da ga dodam posle rucno)
-//         return (path.clone(), path)
-//     }
-
-
-//     let mut keys = if node.key {
-//         path.last_mut().unwrap().1 + 1
-//     } else {
-//         path.last_mut().unwrap().1
-//     };
-
-//     if was_throw_door {
-//         keys -= 1;
-//     }
-
-//     if !path.contains(&(node.position, keys)) {         // da li sam vec bio tu
-//         path.push((node.position, keys));
-//     } else if path.len() == 1 {
-        
-//     } else {
-//         return (path, best_path)
-//     }
-
-
-
-//     (path, best_path) = match &node.down {
-//         Some(down) => {
-//             if down.doors[2] {
-//                 if path[path.len()-1].1 > 0 {
-//                     //path.last_mut().unwrap().1 -= 1;
-//                     search(Some(down.clone()), path, true, best_path)
-//                 } else {
-//                     (path, best_path)
-//                 }
-//             } else {
-//                 search(Some(down.clone()), path, false, best_path)
-//             }
-//         },
-//         None => { (path, best_path) }
-//     };
-
-//     (path, best_path) = match &node.left {
-//         Some(left) => {
-//             if left.doors[2] {
-//                 if path[path.len()-1].1 > 0 {
-//                     search(Some(left.clone()), path, true, best_path)
-//                 } else {
-//                     (path, best_path)
-//                 }
-//             } else {
-//                 search(Some(left.clone()), path, false, best_path)
-//             }
-//         },
-//         None => { (path, best_path) }
-//     };
-
-//     (path, best_path) = match &node.right {
-//         Some(right) => {
-//             if right.doors[2] {
-//                 if path[path.len()-1].1 > 0 {
-//                     search(Some(right.clone()), path, true, best_path)
-//                 } else {
-//                     (path, best_path)
-//                 }
-//             } else {
-//                 search(Some(right.clone()), path, false, best_path)
-//             }
-//         },
-//         None => { (path, best_path) }
-//     };
-
-//     (path, best_path) = match &node.up {
-//         Some(up) => {
-//             if up.doors[2] {
-//                 if path[path.len()-1].1 > 0 {
-//                     search(Some(up.clone()), path, true, best_path)
-//                 } else {
-//                     (path, best_path)
-//                 }
-//             } else {
-//                 search(Some(up.clone()), path, false, best_path)
-//             }
-//         },
-//         None => { (path, best_path) }
-//     };
-
-
-//     // path = match node.up {
-//     //     Some(up) => {
-//     //         search(Some(up), path)
-//     //     },
-//     //     None => { path }
-//     // };
-
-//     (path, best_path)
-// }
 
 
 
