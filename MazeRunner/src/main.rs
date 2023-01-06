@@ -37,9 +37,9 @@ fn main() {
 
     let head = get_input_from_txt("amandaMaze.txt".to_string());
     println!("gotov unos matrice");
-
+    //path je vector tuple-ova koji u sebi sadrzi poziciju, broj kljuceva na toj poziciji, i da li je pokupio tada kljuc
     let path = search(Some(head), vec![([0, 0], 0)], false, Vec::new());
-    println!("{:?}", path);
+    println!("{:?}", path.1);
 }
 
 
@@ -51,12 +51,14 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
     }
 
     
-    if node.borrow().exit {      //dosao je do kraja (vratim mu path bez tog poslednjeg koraka -> treba da ga dodam posle rucno)
-        return (path.clone(), path)
+    if node.borrow().exit {      //dosao je do kraja
+        let new_path = path.clone();
+        path.push((node.borrow().position, path.last().unwrap().1));
+        return (new_path, path)
     }
 
 
-    let mut keys = if node.borrow().key {
+    let mut keys = if node.borrow().key && path.iter().find(|(x, _)| *x == node.borrow().position) == None {
         path.last_mut().unwrap().1 + 1
     } else {
         path.last_mut().unwrap().1
@@ -72,7 +74,7 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
         
     } else {
         return (path, best_path)
-    }
+    }    
 
 
 
@@ -94,7 +96,7 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
 
     (path, best_path) = match &node.borrow().left {
         Some(left) => {
-            if left.borrow().doors[2] {
+            if left.borrow().doors[1] {
                 if path[path.len()-1].1 > 0 {
                     search(Some(left.clone()), path, true, best_path)
                 } else {
@@ -109,7 +111,7 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
 
     (path, best_path) = match &node.borrow().right {
         Some(right) => {
-            if right.borrow().doors[2] {
+            if right.borrow().doors[0] {
                 if path[path.len()-1].1 > 0 {
                     search(Some(right.clone()), path, true, best_path)
                 } else {
@@ -124,7 +126,7 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
 
     (path, best_path) = match &node.borrow().up {
         Some(up) => {
-            if up.borrow().doors[2] {
+            if up.borrow().doors[3] {
                 if path[path.len()-1].1 > 0 {
                     search(Some(up.clone()), path, true, best_path)
                 } else {
@@ -137,22 +139,14 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
         None => { (path, best_path) }
     };
 
-
-    // path = match node.up {
-    //     Some(up) => {
-    //         search(Some(up), path)
-    //     },
-    //     None => { path }
-    // };
-
+    path.pop();
     (path, best_path)
 }
 
 
 fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
     let contents = fs::read_to_string(file_path).expect("Error reading file");
-    
-    // let mut matrix: Vec<Vec<Node>> = Vec::new();
+
     let mut matrix: Vec<Vec<Rc<RefCell<Node>>>> = Vec::new();
     for _ in 0..6 {
         let mut row = Vec::new();
@@ -193,18 +187,8 @@ fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
         };
 
         let key = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
-        let exit = key_and_exit.next().unwrap().1 == '1' && key_and_exit.next().unwrap().1 == '1';
+        let exit = key_and_exit.next().unwrap().1 == '1' || key_and_exit.next().unwrap().1 == '1';
         
-        // let node = Node {
-        //     position: [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()],
-        //     doors: [doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1', doors.next().unwrap().1 == '1'],
-        //     key: key,
-        //     left: left.map(|n| Rc::clone(&n)),
-        //     right: right.map(|n| Rc::clone(&n)),
-        //     up: up.map(|n| Rc::clone(&n)),
-        //     down: down.map(|n| Rc::clone(&n)),
-        //     exit: exit,
-        // };
 
         let mut node_mut = matrix[i/9][i%9].borrow_mut();
 
@@ -215,18 +199,7 @@ fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
         node_mut.left = left.map(|n| Rc::clone(&n));
         node_mut.right = right.map(|n| Rc::clone(&n));
         node_mut.up = up.map(|n| Rc::clone(&n));
-        node_mut.down = down.map(|n| Rc::clone(&n));
-
-
-
-        // let node_ref = Rc::new(RefCell::new(node));
-        // matrix[i/9][i%9] = node_ref.clone();
-
-        // let mut node_mut = node_ref.borrow_mut();
-        // node_mut.left = left.map(|n| Rc::clone(&n));
-        // node_mut.right = right.map(|n| Rc::clone(&n));
-        // node_mut.up = up.map(|n| Rc::clone(&n));
-        // node_mut.down = down.map(|n| Rc::clone(&n));      
+        node_mut.down = down.map(|n| Rc::clone(&n));     
     }
 
     matrix[0][0].clone()
@@ -235,33 +208,6 @@ fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
 
 
 
-
-
-
-// fn create_graph(matrix: &mut Vec<Vec<Box<Node>>>) -> Node {
-//     let num_rows = matrix.len();
-//     let num_cols = matrix[0].len();
-
-//     for row in 0..num_rows {
-//         for col in 0..num_cols {
-//             let node = &mut matrix[row][col];
-//             if col > 0 {
-//                 node.left = node.left.take().replace(matrix[row][col - 1]);
-//             }
-//             if col < num_cols - 1 {
-//                 node.right = node.right.take().replace(matrix[row][col + 1].clone());
-//             }
-//             if row > 0 {
-//                 node.up = node.up.take().replace(matrix[row - 1][col].clone());
-//             }
-//             if row < num_rows - 1 {
-//                 node.down = node.down.take().replace(matrix[row + 1][col].clone());
-//             }
-//         }
-//     }
-
-//     *matrix[0][0]
-// }
 
 
 
