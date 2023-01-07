@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::fs;
 use std::rc::Rc;
-use std::str::FromStr;
 use std::default::Default;
 
 
@@ -33,31 +32,26 @@ impl Default for Node {
 }
 
 fn main() {
-    println!("Hello, world!");
-
     let head = get_input_from_txt("amandaMaze.txt".to_string());
-    println!("gotov unos matrice");
                     //path je vector tuple-ova koji u sebi sadrzi poziciju, broj kljuceva na toj poziciji, i da li je pokupio tada kljuc
     let path = search(Some(head), vec![([0, 0], 0)], false, Vec::new());
-    println!("{:?}", path.1);
+    println!("{:?}", path);
+
+    print_result_matrix(path);
 }
 
 
-fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, mut best_path: Vec<([i8; 2], i32)>) -> (Vec<([i8; 2], i32)>, Vec<([i8; 2], i32)>) {
+fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, mut best_path: Vec<([i8; 2], i32)>) -> Vec<([i8; 2], i32)> {
     let node = node.unwrap();
 
     if path.len() + 1 > best_path.len() && best_path.len() > 1 {    //prekoracio je vec dozvoljenu duzinu puta
-        return (path, best_path)
+        return best_path
     }
 
     
     if node.borrow().exit {      //dosao je do kraja
-        // let new_path = path.clone();
-        // path.push((node.borrow().position, path.last().unwrap().1));
-        // return (new_path, path)
-
         path.push((node.borrow().position, path.last().unwrap().1));
-        return (path.clone(), path)
+        return path
     }
 
 
@@ -76,74 +70,73 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
     } else if path.len() == 1 {
         
     } else {
-        return (path, best_path)
+        return best_path
     }    
 
 
 
-    (_, best_path) = match &node.borrow().down {
+    best_path = match &node.borrow().down {
         Some(down) => {
             if down.borrow().doors[2] {
                 if path[path.len()-1].1 > 0 {
-                    //path.last_mut().unwrap().1 -= 1;
                     search(Some(down.clone()), path.clone(), true, best_path)
                 } else {
-                    (path.clone(), best_path)
+                    best_path
                 }
             } else {
                 search(Some(down.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path.clone(), best_path) }
+        None => { best_path }
     };
 
-    (_, best_path) = match &node.borrow().left {
+    best_path = match &node.borrow().left {
         Some(left) => {
             if left.borrow().doors[1] {
                 if path[path.len()-1].1 > 0 {
                     search(Some(left.clone()), path.clone(), true, best_path)
                 } else {
-                    (path.clone(), best_path)
+                    best_path
                 }
             } else {
                 search(Some(left.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path.clone(), best_path) }
+        None => { best_path }
     };
 
-    (_, best_path) = match &node.borrow().right {
+    best_path = match &node.borrow().right {
         Some(right) => {
             if right.borrow().doors[0] {
                 if path[path.len()-1].1 > 0 {
                     search(Some(right.clone()), path.clone(), true, best_path)
                 } else {
-                    (path.clone(), best_path)
+                    best_path
                 }
             } else {
                 search(Some(right.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path.clone(), best_path) }
+        None => { best_path }
     };
 
-    (_, best_path) = match &node.borrow().up {
+    best_path = match &node.borrow().up {
         Some(up) => {
             if up.borrow().doors[3] {
                 if path[path.len()-1].1 > 0 {
                     search(Some(up.clone()), path.clone(), true, best_path)
                 } else {
-                    (path.clone(), best_path)
+                    best_path
                 }
             } else {
                 search(Some(up.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path.clone(), best_path) }
+        None => { best_path }
     };
 
-    //path.pop();
-    (path, best_path)
+
+    best_path
 }
 
 
@@ -209,12 +202,17 @@ fn get_input_from_txt(file_path: String) -> Rc<RefCell<Node>> {
 }
 
 
+fn print_result_matrix(path: Vec<([i8; 2], i32)>) {
+    for i in 0..6 {
+        for j in 0..9 {
+            if path.iter().find(|(pos, _)| pos[0] == i && pos[1] == j).is_some() {
+                print!("1 ");
+            } else {
+                print!("0 ");
+            }
+        }
+        println!();
+    }
 
-
-
-
-
-
-
-
-
+    println!("Lenght: {}", path.len());
+}
