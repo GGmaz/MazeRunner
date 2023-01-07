@@ -37,7 +37,7 @@ fn main() {
 
     let head = get_input_from_txt("amandaMaze.txt".to_string());
     println!("gotov unos matrice");
-    //path je vector tuple-ova koji u sebi sadrzi poziciju, broj kljuceva na toj poziciji, i da li je pokupio tada kljuc
+                    //path je vector tuple-ova koji u sebi sadrzi poziciju, broj kljuceva na toj poziciji, i da li je pokupio tada kljuc
     let path = search(Some(head), vec![([0, 0], 0)], false, Vec::new());
     println!("{:?}", path.1);
 }
@@ -52,9 +52,12 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
 
     
     if node.borrow().exit {      //dosao je do kraja
-        let new_path = path.clone();
+        // let new_path = path.clone();
+        // path.push((node.borrow().position, path.last().unwrap().1));
+        // return (new_path, path)
+
         path.push((node.borrow().position, path.last().unwrap().1));
-        return (new_path, path)
+        return (path.clone(), path)
     }
 
 
@@ -78,68 +81,68 @@ fn search(node: Option<Rc<RefCell<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
 
 
 
-    (path, best_path) = match &node.borrow().down {
+    (_, best_path) = match &node.borrow().down {
         Some(down) => {
             if down.borrow().doors[2] {
                 if path[path.len()-1].1 > 0 {
                     //path.last_mut().unwrap().1 -= 1;
-                    search(Some(down.clone()), path, true, best_path)
+                    search(Some(down.clone()), path.clone(), true, best_path)
                 } else {
-                    (path, best_path)
+                    (path.clone(), best_path)
                 }
             } else {
-                search(Some(down.clone()), path, false, best_path)
+                search(Some(down.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path, best_path) }
+        None => { (path.clone(), best_path) }
     };
 
-    (path, best_path) = match &node.borrow().left {
+    (_, best_path) = match &node.borrow().left {
         Some(left) => {
             if left.borrow().doors[1] {
                 if path[path.len()-1].1 > 0 {
-                    search(Some(left.clone()), path, true, best_path)
+                    search(Some(left.clone()), path.clone(), true, best_path)
                 } else {
-                    (path, best_path)
+                    (path.clone(), best_path)
                 }
             } else {
-                search(Some(left.clone()), path, false, best_path)
+                search(Some(left.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path, best_path) }
+        None => { (path.clone(), best_path) }
     };
 
-    (path, best_path) = match &node.borrow().right {
+    (_, best_path) = match &node.borrow().right {
         Some(right) => {
             if right.borrow().doors[0] {
                 if path[path.len()-1].1 > 0 {
-                    search(Some(right.clone()), path, true, best_path)
+                    search(Some(right.clone()), path.clone(), true, best_path)
                 } else {
-                    (path, best_path)
+                    (path.clone(), best_path)
                 }
             } else {
-                search(Some(right.clone()), path, false, best_path)
+                search(Some(right.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path, best_path) }
+        None => { (path.clone(), best_path) }
     };
 
-    (path, best_path) = match &node.borrow().up {
+    (_, best_path) = match &node.borrow().up {
         Some(up) => {
             if up.borrow().doors[3] {
                 if path[path.len()-1].1 > 0 {
-                    search(Some(up.clone()), path, true, best_path)
+                    search(Some(up.clone()), path.clone(), true, best_path)
                 } else {
-                    (path, best_path)
+                    (path.clone(), best_path)
                 }
             } else {
-                search(Some(up.clone()), path, false, best_path)
+                search(Some(up.clone()), path.clone(), false, best_path)
             }
         },
-        None => { (path, best_path) }
+        None => { (path.clone(), best_path) }
     };
 
-    path.pop();
+    //path.pop();
     (path, best_path)
 }
 
