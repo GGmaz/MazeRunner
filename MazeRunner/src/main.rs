@@ -1,6 +1,4 @@
-use std::cell::RefCell;
-use std::{fs, thread};
-use std::rc::Rc;
+use std::fs;
 use std::default::Default;
 use std::sync::{Arc, Mutex, RwLock};
 use rayon::prelude::*;
@@ -39,6 +37,7 @@ fn main() {
     let res = Arc::new(Mutex::new(vec![]));
     search(Some(head), vec![([0, 0], 0)], false, res.clone());
     println!("{:?}", res.clone());
+
     let res_guard = res.lock().unwrap();
     print_result_matrix(res_guard.to_vec());
 }
@@ -72,6 +71,7 @@ fn search(node: Option<Arc<RwLock<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
         keys -= 1;
     }
 
+
     if !path.contains(&(node_guard.position, keys)) {         // da li sam vec bio tu
         path.push((node_guard.position, keys));
     } else if path.len() == 1 {
@@ -79,10 +79,9 @@ fn search(node: Option<Arc<RwLock<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
     } else {
         return 
     }    
-    //drop(node_guard);
+
 
     let neighbors = vec![node_guard.right.clone(), node_guard.left.clone(), node_guard.down.clone(), node_guard.up.clone()];
-    //drop(node_guard);
 
     neighbors.into_par_iter().enumerate().for_each(|(i, neighbor)| {
         if let Some(neighbor) = neighbor {
@@ -100,77 +99,7 @@ fn search(node: Option<Arc<RwLock<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
                 search(Some(neighbor), cloned_path, false, best_path_clone);
             }
         }
-    });
-
-
-    // match &node_guard.down {
-    //     Some(down) => {
-    //         let node_clone = down.clone();
-    //         let cloned_path = path.clone();
-    //         let best_path_clone = best_path.clone();
-    //         let down_guard = down.read().unwrap();
-    //         if down_guard.doors[2] {
-    //             if path[path.len()-1].1 > 0 {                    
-    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
-    //             } 
-    //         } else {
-    //             thread::spawn(move || search(Some(node_clone), cloned_path, false, best_path_clone));
-    //         }
-    //     },
-    //     None => {  }
-    // };
-
-    // match &node_guard.left {
-    //     Some(left) => {
-    //         let node_clone = left.clone();
-    //         let cloned_path = path.clone();
-    //         let best_path_clone = best_path.clone();
-    //         let left_guard = left.read().unwrap();
-    //         if left_guard.doors[1] {
-    //             if path[path.len()-1].1 > 0 {
-    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
-    //             }
-    //         } else {
-    //             thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
-    //         }
-    //     },
-    //     None => {  }
-    // };
-
-    // match &node_guard.right {
-    //     Some(right) => {
-    //         let node_clone = right.clone();
-    //         let cloned_path = path.clone();
-    //         let best_path_clone = best_path.clone();
-    //         let right_guard = right.read().unwrap();
-    //         if right_guard.doors[0] {
-    //             if path[path.len()-1].1 > 0 {
-    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
-    //             } 
-    //         } else {
-    //             thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
-    //         }
-    //     },
-    //     None => {  }
-    // };
-
-    // match &node_guard.up {
-    //     Some(up) => {
-    //         let node_clone = up.clone();
-    //         let cloned_path = path.clone();
-    //         let best_path_clone = best_path.clone();
-    //         let up_guard = up.read().unwrap();
-    //         if up_guard.doors[3] {
-    //             if path[path.len()-1].1 > 0 {
-    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
-    //             }
-    //         } else {
-    //             thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
-    //         }
-    //     },
-    //     None => {  }
-    // };
-    
+    });    
 }
 
 
@@ -220,8 +149,6 @@ fn get_input_from_txt(file_path: String) -> Arc<RwLock<Node>> {
         let exit = key_and_exit.next().unwrap().1 == '1' || key_and_exit.next().unwrap().1 == '1';
         
 
-        // let mut node_mut = matrix[i/9][i%9].clone();
-        // let mut node_mut = Arc::get_mut(&mut matrix[i/9][i%9]).unwrap();
         let mut node_mut = matrix[i/9][i%9].write().unwrap();
 
         (*node_mut).position = [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()];
@@ -236,10 +163,6 @@ fn get_input_from_txt(file_path: String) -> Arc<RwLock<Node>> {
 
     matrix[0][0].clone()
 }
-
-
-
-
 
 
 fn print_result_matrix(path: Vec<([i8; 2], i32)>) {
