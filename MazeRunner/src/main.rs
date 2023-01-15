@@ -2,7 +2,8 @@ use std::cell::RefCell;
 use std::{fs, thread};
 use std::rc::Rc;
 use std::default::Default;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
+use rayon::prelude::*;
 
 
 #[derive(Clone, Debug)]
@@ -10,10 +11,10 @@ struct Node {
     position: [i8; 2],
     doors: [bool; 4],
     key: bool,
-    left: Option<Arc<Mutex<Node>>>,
-    right: Option<Arc<Mutex<Node>>>,
-    up: Option<Arc<Mutex<Node>>>,
-    down: Option<Arc<Mutex<Node>>>,
+    left: Option<Arc<RwLock<Node>>>,
+    right: Option<Arc<RwLock<Node>>>,
+    up: Option<Arc<RwLock<Node>>>,
+    down: Option<Arc<RwLock<Node>>>,
     exit: bool,
 }
 
@@ -35,22 +36,152 @@ impl Default for Node {
 fn main() {
     let head = get_input_from_txt("amandaMaze.txt".to_string());
                     //path je vector tuple-ova koji u sebi sadrzi poziciju, broj kljuceva na toj poziciji, i da li je pokupio tada kljuc
-    // let res = Arc::new(Mutex::new(vec![]));
-    // search(Some(), vec![([0, 0], 0)], false, res.clone());
-    // println!("{:?}", res);
-
-    //print_result_matrix(res);
+    let res = Arc::new(Mutex::new(vec![]));
+    search(Some(head), vec![([0, 0], 0)], false, res.clone());
+    println!("{:?}", res.clone());
+    let res_guard = res.lock().unwrap();
+    print_result_matrix(res_guard.to_vec());
 }
 
 
-fn get_input_from_txt(file_path: String) -> Arc<Mutex<Node>> {
+fn search(node: Option<Arc<RwLock<Node>>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, best_path: Arc<Mutex<Vec<([i8; 2], i32)>>>) {
+    let node = node.unwrap();
+    let node_guard = node.read().unwrap();
+
+    let mut best = best_path.lock().unwrap();
+    if path.len() + 1 > best.len() && best.len() > 1 {    //prekoracio je vec dozvoljenu duzinu puta
+        return 
+    }
+
+    
+    if node_guard.exit {      //dosao je do kraja
+        path.push((node_guard.position, path.last().unwrap().1));
+        *best = path;
+        return 
+    }
+    drop(best);
+
+
+    let mut keys = if node_guard.key && path.iter().find(|(x, _)| *x == node_guard.position) == None {
+        path.last_mut().unwrap().1 + 1
+    } else {
+        path.last_mut().unwrap().1
+    };
+
+    if was_throw_door {
+        keys -= 1;
+    }
+
+    if !path.contains(&(node_guard.position, keys)) {         // da li sam vec bio tu
+        path.push((node_guard.position, keys));
+    } else if path.len() == 1 {
+        
+    } else {
+        return 
+    }    
+    //drop(node_guard);
+
+    let neighbors = vec![node_guard.right.clone(), node_guard.left.clone(), node_guard.down.clone(), node_guard.up.clone()];
+    //drop(node_guard);
+
+    neighbors.into_par_iter().enumerate().for_each(|(i, neighbor)| {
+        if let Some(neighbor) = neighbor {
+            let cloned_path = path.clone();
+            let best_path_clone = best_path.clone();
+
+            let neighbor_guard = neighbor.read().unwrap();
+            if neighbor_guard.doors[i] {
+                drop(neighbor_guard);
+                if path[path.len()-1].1 > 0 {
+                    search(Some(neighbor), cloned_path, true, best_path_clone);
+                }
+            } else {
+                drop(neighbor_guard);
+                search(Some(neighbor), cloned_path, false, best_path_clone);
+            }
+        }
+    });
+
+
+    // match &node_guard.down {
+    //     Some(down) => {
+    //         let node_clone = down.clone();
+    //         let cloned_path = path.clone();
+    //         let best_path_clone = best_path.clone();
+    //         let down_guard = down.read().unwrap();
+    //         if down_guard.doors[2] {
+    //             if path[path.len()-1].1 > 0 {                    
+    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
+    //             } 
+    //         } else {
+    //             thread::spawn(move || search(Some(node_clone), cloned_path, false, best_path_clone));
+    //         }
+    //     },
+    //     None => {  }
+    // };
+
+    // match &node_guard.left {
+    //     Some(left) => {
+    //         let node_clone = left.clone();
+    //         let cloned_path = path.clone();
+    //         let best_path_clone = best_path.clone();
+    //         let left_guard = left.read().unwrap();
+    //         if left_guard.doors[1] {
+    //             if path[path.len()-1].1 > 0 {
+    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
+    //             }
+    //         } else {
+    //             thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
+    //         }
+    //     },
+    //     None => {  }
+    // };
+
+    // match &node_guard.right {
+    //     Some(right) => {
+    //         let node_clone = right.clone();
+    //         let cloned_path = path.clone();
+    //         let best_path_clone = best_path.clone();
+    //         let right_guard = right.read().unwrap();
+    //         if right_guard.doors[0] {
+    //             if path[path.len()-1].1 > 0 {
+    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
+    //             } 
+    //         } else {
+    //             thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
+    //         }
+    //     },
+    //     None => {  }
+    // };
+
+    // match &node_guard.up {
+    //     Some(up) => {
+    //         let node_clone = up.clone();
+    //         let cloned_path = path.clone();
+    //         let best_path_clone = best_path.clone();
+    //         let up_guard = up.read().unwrap();
+    //         if up_guard.doors[3] {
+    //             if path[path.len()-1].1 > 0 {
+    //                 thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
+    //             }
+    //         } else {
+    //             thread::spawn(move || search(Some(node_clone), cloned_path, true, best_path_clone));
+    //         }
+    //     },
+    //     None => {  }
+    // };
+    
+}
+
+
+fn get_input_from_txt(file_path: String) -> Arc<RwLock<Node>> {
     let contents = fs::read_to_string(file_path).expect("Error reading file");
 
-    let mut matrix: Vec<Vec<Arc<Mutex<Node>>>> = Vec::new();
+    let mut matrix: Vec<Vec<Arc<RwLock<Node>>>> = Vec::new();
     for _ in 0..6 {
         let mut row = Vec::new();
         for _ in 0..9 {
-            row.push(Arc::new(Mutex::new(Node::default())));
+            row.push(Arc::new(RwLock::new(Node::default())));
         }
         matrix.push(row);
     }
@@ -91,7 +222,7 @@ fn get_input_from_txt(file_path: String) -> Arc<Mutex<Node>> {
 
         // let mut node_mut = matrix[i/9][i%9].clone();
         // let mut node_mut = Arc::get_mut(&mut matrix[i/9][i%9]).unwrap();
-        let mut node_mut = matrix[i/9][i%9].lock().unwrap();
+        let mut node_mut = matrix[i/9][i%9].write().unwrap();
 
         (*node_mut).position = [(i/9).try_into().unwrap(), (i%9).try_into().unwrap()];
         (*node_mut).key = key;
@@ -106,98 +237,6 @@ fn get_input_from_txt(file_path: String) -> Arc<Mutex<Node>> {
     matrix[0][0].clone()
 }
 
-
-// fn search(node: Option<Arc<Node>>, mut path: Vec<([i8; 2], i32)>, was_throw_door: bool, best_path: Arc<Mutex<Vec<([i8; 2], i32)>>>) {
-//     let node = node.unwrap();
-
-//     let mut best = best_path.lock().unwrap();
-//     if path.len() + 1 > best.len() && best.len() > 1 {    //prekoracio je vec dozvoljenu duzinu puta
-//         return 
-//     }
-
-    
-//     if node.borrow().exit {      //dosao je do kraja
-//         path.push((node.borrow().position, path.last().unwrap().1));
-//         *best = path;
-//         return 
-//     }
-
-
-//     let mut keys = if node.borrow().key && path.iter().find(|(x, _)| *x == node.borrow().position) == None {
-//         path.last_mut().unwrap().1 + 1
-//     } else {
-//         path.last_mut().unwrap().1
-//     };
-
-//     if was_throw_door {
-//         keys -= 1;
-//     }
-
-//     if !path.contains(&(node.borrow().position, keys)) {         // da li sam vec bio tu
-//         path.push((node.borrow().position, keys));
-//     } else if path.len() == 1 {
-        
-//     } else {
-//         return 
-//     }    
-
-
-
-//     match &node.borrow().down {
-//         Some(down) => {
-//             if down.borrow().doors[2] {
-//                 if path[path.len()-1].1 > 0 {
-//                     thread::spawn(move || search(Some(down.clone()), path.clone(), true, best_path.clone()));
-//                 } 
-//             } else {
-//                 thread::spawn(move || search(Some(down.clone()), path.clone(), false, best_path.clone()));
-//             }
-//         },
-//         None => {  }
-//     };
-
-//     match &node.borrow().left {
-//         Some(left) => {
-//             if left.borrow().doors[1] {
-//                 if path[path.len()-1].1 > 0 {
-//                     thread::spawn(move || search(Some(left.clone()), path.clone(), true, best_path.clone()));
-//                 }
-//             } else {
-//                 thread::spawn(move || search(Some(left.clone()), path.clone(), false, best_path.clone()));
-//             }
-//         },
-//         None => {  }
-//     };
-
-//     match &node.borrow().right {
-//         Some(right) => {
-//             if right.borrow().doors[0] {
-//                 if path[path.len()-1].1 > 0 {
-//                     search(Some(right.clone()), path.clone(), true, best_path.clone())
-//                 } 
-//             } else {
-//                 search(Some(right.clone()), path.clone(), false, best_path.clone())
-//             }
-//         },
-//         None => {  }
-//     };
-
-//     match &node.borrow().up {
-//         Some(up) => {
-//             if up.borrow().doors[3] {
-//                 if path[path.len()-1].1 > 0 {
-//                     search(Some(up.clone()), path.clone(), true, best_path.clone())
-//                 }
-//             } else {
-//                 search(Some(up.clone()), path.clone(), false, best_path.clone())
-//             }
-//         },
-//         None => {  }
-//     };
-
-
-    
-// }
 
 
 
