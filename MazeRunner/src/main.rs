@@ -81,7 +81,7 @@ fn search(node: Option<Arc<RwLock<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
     }    
 
 
-    let neighbors = vec![node_guard.right.clone(), node_guard.left.clone(), node_guard.down.clone(), node_guard.up.clone()];
+    let neighbors = vec![node_guard.left.clone(), node_guard.right.clone(), node_guard.up.clone(), node_guard.down.clone()];
 
     neighbors.into_par_iter().enumerate().for_each(|(i, neighbor)| {
         if let Some(neighbor) = neighbor {
@@ -89,7 +89,7 @@ fn search(node: Option<Arc<RwLock<Node>>>, mut path: Vec<([i8; 2], i32)>, was_th
             let best_path_clone = best_path.clone();
 
             let neighbor_guard = neighbor.read().unwrap();
-            if neighbor_guard.doors[i] {
+            if node_guard.doors[i] {
                 drop(neighbor_guard);
                 if path[path.len()-1].1 > 0 {
                     search(Some(neighbor), cloned_path, true, best_path_clone);
